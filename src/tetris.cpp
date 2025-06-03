@@ -1,5 +1,9 @@
-#include <iostream>
+#include "tetris.h"
 
-int main() {
-    std::cout << "Hello world!" << std::endl;
+Tetris::Tetris(int width, int height, int initialDifficulty=0, int nextTetrominoSize):
+    width(width),
+    height(height),
+    initialDifficulty(initialDifficulty),
+    playField(Rectangle(width, height)),
+    difficulty(initialDifficulty) {
 }
