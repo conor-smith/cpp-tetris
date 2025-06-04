@@ -19,6 +19,7 @@ enum class Cell {
 class Rectangle {
     public:
         Rectangle(int width, int height, std::vector<Cell> cells);
+        Rectangle(int width, int height);
         
         int getWidth();
         int getHeight();
@@ -148,7 +149,7 @@ const Tetromino T_PIECE = Tetromino({
     })
 });
 
-const std::array<Tetromino, 7> TETROMINOS = {I_PIECE, L_PIECE, J_PIECE, O_PIECE, S_PIECE, Z_PIECE, T_PIECE};
+const std::array<const Tetromino*, 7> TETROMINOS = {&I_PIECE, &L_PIECE, &J_PIECE, &O_PIECE, &S_PIECE, &Z_PIECE, &T_PIECE};
 
 /*
  * Represents the currently active Tetromino of a game
@@ -168,6 +169,12 @@ class ActiveTetromino {
 class ClearedRows {
     public:
         std::vector<int> rowsCleared;
+};
+
+class Coordinate {
+    public:
+        int x, y;
+        Coordinate(int x, int y);
 };
 
 /*
@@ -214,19 +221,18 @@ class ClearedRows {
  */
 class Tetris {
     public:
-        Tetris(int width, int height, int initialDifficulty = 0, int nextTetrominoListSize = 3);
+        Tetris(int width, int height, int initialDifficulty = 0, int queuedTetrominoSize = 3);
         Tetris(): Tetris(10, 16, 0, 3) {}
-        ~Tetris();
 
         int getScore();
         int getDifficulty();
-        std::vector<Tetromino*> getQueuedTetrominos();
+        
+        bool hasSavedTetromino();
+        Tetromino* getSavedTetromino();
+        ActiveTetromino* getActiveTetromino();
+        std::vector<const Tetromino*>* getQueuedTetrominos();
 
-        bool hasSavedPiece();
-        Tetromino* getSavedPiece();
-        ActiveTetromino getActiveTetromino();
-
-        Rectangle getPlayField();
+        Rectangle* getPlayField();
 
         // Defaults to incrementing by 1, but can increase or decrease level by arbitrary amount
         void updateDifficulty(int increment = 1);
@@ -245,7 +251,13 @@ class Tetris {
         const int width;
         const int height;
         const int initialDifficulty;
-        const Rectangle playField;
-
+        
         int difficulty;
+        int score;
+        Rectangle playField;
+        ActiveTetromino activeTetromino;
+        std::vector<const Tetromino*> queuedTetrominos;
+        Tetromino* savedTetromino;
+
+        std::vector<Coordinate> testForCollisions();
 };
