@@ -3,41 +3,7 @@
 
 #pragma once
 
-// Represents a single square or cell in the playfield
-enum class Cell {
-    empty,
-    lightBlue,
-    blue,
-    orange,
-    yellow,
-    green,
-    red,
-    purple
-};
-
-// Represents 2D plane of cells of size length * height
-class Rectangle {
-    public:
-        Rectangle(int width, int height, std::vector<Cell> cells);
-        Rectangle(int width, int height);
-        
-        int getWidth();
-        int getHeight();
-        Cell getCell(int x, int y);
-    
-    private:
-        int width;
-        int height;
-        std::vector<Cell> cells;
-};
-
-// Represents a tetromino. Each rotation is stored as an individual square
-class Tetromino {
-    public:
-        Tetromino(std::vector<Rectangle> rotations);
-        std::vector<Rectangle> rotations;
-};
-
+// All 7 tetromino pieces and their rotations
 const Tetromino I_PIECE = Tetromino({
     Rectangle(4, 4, {
         Cell::empty,     Cell::empty,     Cell::lightBlue,     Cell::empty,
@@ -149,7 +115,49 @@ const Tetromino T_PIECE = Tetromino({
     })
 });
 
-const std::array<const Tetromino*, 7> TETROMINOS = {&I_PIECE, &L_PIECE, &J_PIECE, &O_PIECE, &S_PIECE, &Z_PIECE, &T_PIECE};
+const std::array<Tetromino*, 7> TETROMINOS = {&I_PIECE, &L_PIECE, &J_PIECE, &O_PIECE, &S_PIECE, &Z_PIECE, &T_PIECE};
+
+// Represents a single square or cell in the playfield
+enum class Cell {
+    empty,
+    border,
+    lightBlue,
+    blue,
+    orange,
+    yellow,
+    green,
+    red,
+    purple
+};
+
+// Represents a point in 2D space
+class Coordinate {
+    public:
+        Coordinate(int x, int y);
+        int x, y;
+};
+
+// Represents 2D plane of cells of size length * height
+class Rectangle {
+    public:
+        Rectangle(int width, int height, std::vector<Cell> cells);
+        Rectangle(int width, int height);
+        
+        const int width;
+        const int height;
+        
+        Cell getCell(int x, int y) const;
+    
+    private:
+        std::vector<Cell> cells;
+};
+
+// Represents a tetromino. Each rotation is stored as an individual square
+class Tetromino {
+    public:
+        Tetromino(std::vector<Rectangle> rotations);
+        const std::vector<Rectangle> rotations;
+};
 
 /*
  * Represents the currently active Tetromino of a game
@@ -158,23 +166,27 @@ const std::array<const Tetromino*, 7> TETROMINOS = {&I_PIECE, &L_PIECE, &J_PIECE
  */
 class ActiveTetromino {
     public:
-        Tetromino* getTetromino();
-        Rectangle* getCurrentRotation();
-        // Represents left most column of Square / rotation
-        int getXCoordinate();
-        // Represents lowest row of Square / rotation
-        int getYCoordinate();
+        const Tetromino* getTetromino();
+        const Rectangle* getCurrentRotation();
+        // Represents position of bottom left cell
+        Coordinate getOffset();
+
+        friend class Tetris;
+    
+    private:
+        ActiveTetromino();
+        void rotateClockwise();
+        void rotateAnticlockwise();
+
+        const Tetromino* tetromino;
+        int currentRotationIndex;
+        Coordinate offset;
 };
 
 class ClearedRows {
     public:
-        std::vector<int> rowsCleared;
-};
-
-class Coordinate {
-    public:
-        int x, y;
-        Coordinate(int x, int y);
+        ClearedRows(std::vector<int> rows);
+        std::vector<int> rows;
 };
 
 /*
@@ -228,7 +240,7 @@ class Tetris {
         int getDifficulty();
         
         bool hasSavedTetromino();
-        Tetromino* getSavedTetromino();
+        const Tetromino* getSavedTetromino();
         ActiveTetromino* getActiveTetromino();
         std::vector<const Tetromino*>* getQueuedTetrominos();
 
@@ -237,10 +249,13 @@ class Tetris {
         // Defaults to incrementing by 1, but can increase or decrease level by arbitrary amount
         void updateDifficulty(int increment = 1);
 
+        // Swaps currently active Tetromino with saved Tetromino
+        bool saveTetromino();
+
         // Game moves. Returns true if successful
         bool moveLeft();
         bool moveRight();
-        bool moveDown(int amount = 1);
+        bool moveDown();
         bool moveToBottom();
         bool rotateClockwise();
         bool rotateAnticlockwise();
@@ -248,8 +263,6 @@ class Tetris {
         void clearRows();
     
     private:
-        const int width;
-        const int height;
         const int initialDifficulty;
         
         int difficulty;
@@ -257,7 +270,11 @@ class Tetris {
         Rectangle playField;
         ActiveTetromino activeTetromino;
         std::vector<const Tetromino*> queuedTetrominos;
-        Tetromino* savedTetromino;
+        const Tetromino* savedTetromino;
+        bool savedTetrominoThisTurn;
 
+        bool offsetActiveTetromino(int x, int y);
         std::vector<Coordinate> testForCollisions();
+        const Tetromino* getRandomTetromino();
+        void nextTurn(const Tetromino* nextTetromino);
 };
