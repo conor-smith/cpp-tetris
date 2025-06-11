@@ -27,10 +27,13 @@ enum class Input {
 
 class TetrisUi {
     public:
-        TetrisUi(TetrisState* gameState);
-        ~TetrisUi();
-        void render();
+        virtual ~TetrisUi() = default;
+        virtual void render() {}
 
-    private:
+
+    protected:
+        TetrisUi(TetrisState* gameState) : gameState(gameState) {}
         TetrisState* gameState;
 };
+
+TetrisUi* createTetrisUi(TetrisState* gameState);

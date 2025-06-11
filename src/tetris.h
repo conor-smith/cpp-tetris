@@ -6,9 +6,12 @@
 class Tetris {
     public:
         Tetris();
+        ~Tetris();
+        
         int startGame();
+
 
     private:
         TetrisState gameState;
-        TetrisUi ui;
+        TetrisUi* ui;
 };

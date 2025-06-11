@@ -6,12 +6,17 @@
 
 using namespace std::chrono_literals;
 
-Tetris::Tetris() : gameState(TetrisState()), ui(TetrisUi(&gameState)) {}
+Tetris::Tetris() : gameState(TetrisState()), ui(createTetrisUi(&gameState)) {}
+
+Tetris::~Tetris() {
+    delete ui;
+}
 
 int Tetris::startGame() {
-    ui.render();
+    ui->render();
 
     std::this_thread::sleep_for(10000ms);
 
     return 0;
 }
+
