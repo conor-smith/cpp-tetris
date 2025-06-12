@@ -27,15 +27,17 @@ enum class Input {
 
 class TetrisUi {
     public:
-        virtual ~TetrisUi() = default;
-        virtual void render() {}
-        virtual bool isAnimating() {
-            return false;
-        }
+
+    virtual ~TetrisUi() = default;
+    virtual void render() {}
+    virtual bool isAnimating() {
+        return false;
+    }
 
     protected:
-        TetrisUi(TetrisState* gameState) : gameState(gameState) {}
-        TetrisState* gameState;
+    
+    TetrisUi(TetrisState* gameState) : gameState(gameState) {}
+    TetrisState* gameState;
 };
 
 TetrisUi* createTetrisUi(TetrisState* gameState);

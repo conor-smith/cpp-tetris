@@ -5,13 +5,14 @@
 
 class Tetris {
     public:
-        Tetris();
-        ~Tetris();
-        
-        int startGame();
 
+    Tetris();
+    ~Tetris();
+    
+    int startGame();
 
     private:
-        TetrisState gameState;
-        TetrisUi* ui;
+    
+    TetrisState gameState;
+    TetrisUi* ui;
 };
