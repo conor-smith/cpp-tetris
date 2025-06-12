@@ -29,7 +29,9 @@ class TetrisUi {
     public:
         virtual ~TetrisUi() = default;
         virtual void render() {}
-
+        virtual bool isAnimating() {
+            return false;
+        }
 
     protected:
         TetrisUi(TetrisState* gameState) : gameState(gameState) {}

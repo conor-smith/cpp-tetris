@@ -10,49 +10,49 @@
  * Will throw an exception if terminal isn't large enough to render entire game 
  */
 class NCursesUi : public TetrisUi {
+    private:
+        WINDOW* playFieldW;
+        WINDOW* savedPieceW;
+        WINDOW* scoreW;
+        WINDOW* queueW;
+
+        bool animating;
+
     public:
         NCursesUi(TetrisState* gameState) : TetrisUi(gameState) {
             initscr();
         }
 
         void render() override {
-            renderBox(3, 1, 14, 7);
-            renderBox(3, 9, 14, 22);
-            renderBox(17, 1, 38, 22);
-            renderBox(41, 1, 52, 17);
+            // Create windows
+            savedPieceW = newwin(7, 12, 1, 2);
+            wborder(savedPieceW, '|', '|', '-', '-', '+', '+', '+', '+');
+
+            scoreW = newwin(14, 12, 9, 2);
+            wborder(scoreW, '|', '|', '-', '-', '+', '+', '+', '+');
+            // renderBox(3, 1, 14, 7);
+
+            playFieldW = newwin(22, 22, 1, 16);
+            wborder(playFieldW, '|', '|', '-', '-', '+', '+', '+', '+');
+
+            queueW = newwin(17, 12, 1, 40);
+            wborder(queueW, '|', '|', '-', '-', '+', '+', '+', '+');
+            // renderBox(3, 9, 14, 22);
+            // renderBox(17, 1, 38, 22);
+            // renderBox(41, 1, 52, 17);
             refresh();
+            wrefresh(savedPieceW);
+            wrefresh(scoreW);
+            wrefresh(playFieldW);
+            wrefresh(queueW);
         }
 
         ~NCursesUi() {
             endwin();
         }
-    
-    private:
-        void renderBox(int x1, int y1, int x2, int y2) {
-            // Print top line
-            mvaddch(y1, x1, '+');
 
-            for(int i = 0;i < x2 - x1 - 1;i++) {
-                addch('-');
-            }
-            addch('+');
-
-            // Print bottom line
-            mvaddch(y2, x1, '+');
-            for(int i = 0;i < x2 - x1 - 1;i++) {
-                addch('-');
-            }
-            addch('+');
-
-            // Print left line
-            for(int i = y1 + 1;i < y2;i++) {
-                mvaddch(i, x1, '|');
-            }
-
-            // print right line
-            for(int i = y1 + 1;i < y2;i++) {
-                mvaddch(i, x2, '|');
-            }
+        bool isAnimating() override {
+            return false;
         }
 };
 
