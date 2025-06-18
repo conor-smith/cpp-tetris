@@ -5,31 +5,30 @@
 #pragma once
 
 enum class Input {
-    leftKeyDown,
-    leftKeyUp,
-    rightKeyDown,
-    rightKeyUp,
-    downKeyDown,
-    downKeyUp,
-    bottomKeyDown,
-    bottomKeyUp,
-    clockwiseKeyDown,
-    clockwiseKeyUp,
-    anticlockwiseKeyDown,
-    anticlockwiseKeyUp,
-    placeKeyDown,
-    placeKeyUp,
-    saveKeyDown,
-    saveKeyUp,
-    pauseKeyDown,
-    pauseKeyUp
+    noInput,
+    left,
+    right,
+    down,
+    clockwise,
+    anticlockwise,
+    place,
+    save,
+    pause
 };
 
 class TetrisUi {
     public:
 
     virtual ~TetrisUi() = default;
+    
     virtual void render() {}
+    
+    virtual void setToggleAcceptInputs(bool acceptInputs) {}
+    virtual Input getInput() {
+        return Input::noInput;
+    }
+
+    virtual void animateClearingRows(std::vector<int> rowsToClear) {}
     virtual bool isAnimating() {
         return false;
     }

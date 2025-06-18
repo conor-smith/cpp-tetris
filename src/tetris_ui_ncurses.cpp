@@ -1,8 +1,23 @@
 #include <ncurses.h>
 #include <iostream>
+#include <string>
+#include <thread>
+#include <atomic>
+#include <map>
 
 #include "tetris_ui.h"
 #include "tetris_state.h"
+
+const std::map<char, Input> inputMap = {
+    {'a', Input::left},
+    {'s', Input::down},
+    {'d', Input::right},
+    {'q', Input::anticlockwise},
+    {'e', Input::clockwise},
+    {' ', Input::place},
+    {'w', Input::save},
+    {27, Input::pause} // Escape key
+};
 
 /*
  * UI built to use ncurses and run in command line
@@ -17,14 +32,18 @@ class NCursesUi : public TetrisUi {
     WINDOW* scoreW;
     WINDOW* queueW;
 
-    bool animating;
+    bool animating = false;
+
+    std::atomic_bool acceptInput;
+    std::atomic<Input> input;
 
     public:
+
     NCursesUi(TetrisState* gameState) : TetrisUi(gameState) {
         initscr();
-    }
+        cbreak();
+        noecho();
 
-    void render() override {
         // Create windows
         savedPieceW = newwin(7, 12, 1, 2);
         wborder(savedPieceW, '|', '|', '-', '-', '+', '+', '+', '+');
@@ -44,6 +63,9 @@ class NCursesUi : public TetrisUi {
         wrefresh(queueW);
     }
 
+    void render() override {
+    }
+
     ~NCursesUi() {
         // Unsure if necessary, but doesn't hurt
         delwin(savedPieceW);
@@ -56,6 +78,26 @@ class NCursesUi : public TetrisUi {
 
     bool isAnimating() override {
         return false;
+    }
+
+    private:
+
+    void readFromTerminal() {
+        while(true) {
+            auto input = getch();
+
+            if(acceptInput) {
+                switch (input)
+                {
+                case 'a':
+                    /* code */
+                    break;
+                
+                default:
+                    break;
+                }
+            }
+        }
     }
 };
 

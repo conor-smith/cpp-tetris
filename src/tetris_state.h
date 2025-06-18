@@ -26,6 +26,8 @@ class Rectangle {
     Rectangle(int width, int height);
     Rectangle(int width, int height, std::vector<Cell> contents);
 
+    void setCell(int x, int y, Cell newValue);
+
     const int width;
     const int height;
 
@@ -33,5 +35,18 @@ class Rectangle {
 };
 
 class TetrisState {
+    // public:
+    
+    // TetrisState();
+    // Rectangle* getPlayField();
 
+    // bool moveLeft();
+    // bool moveRight();
+    // bool moveDown();
+    // bool moveToBottom();
+    // bool rotateClockwise();
+    // bool rotateAnticlockwise();
+    
+    // std::vector<int> checkClearedRowsIfPlaced();
+    // bool placeAndClearRows(std::vector<int> rowsToClear = {});
 };
