@@ -33,22 +33,26 @@ class NCursesUi : public TetrisUi {
     
     friend void readFromTerminal(NCursesUi* ui);
 
+    Input getInput() override;
+
     bool isAnimating() override;
     void render() override;
 
     private:
 
+    
     WINDOW* playFieldW;
     WINDOW* savedPieceW;
     WINDOW* scoreW;
     WINDOW* queueW;
-
+    
     bool animating = false;
-
+    
     std::atomic_bool acceptInput;
-    std::atomic<char> inputBuffer;
-
-    std::thread inputThread;    
+    std::atomic<Input> inputBuffer;
+    
+    std::thread* inputThread;    
+    std::atomic_bool endInputThread = false;
 };
 
 TetrisUi* createTetrisUi(TetrisState* gameState) {
@@ -56,13 +60,12 @@ TetrisUi* createTetrisUi(TetrisState* gameState) {
 }
 
 void readFromTerminal(NCursesUi* ui) {
-    while(true) {
-        auto input = getch();
+    while(!ui->endInputThread) {
+        char input = halfdelay(10);
 
-        // if(acceptInput && inputMap.contains(input)) {
-        //     inputBuffer = inputMap.at(input);
-        // }
-        ui->inputBuffer.store(input);
+        if(ui->acceptInput && inputMap.contains(input)) {
+            ui->inputBuffer.store(inputMap.at(input));
+        }
     }
 }
 
@@ -89,7 +92,7 @@ NCursesUi::NCursesUi(TetrisState* gameState) : TetrisUi(gameState) {
     wrefresh(playFieldW);
     wrefresh(queueW);
 
-    inputThread = std::thread(readFromTerminal, this);
+    inputThread = new std::thread(readFromTerminal, this);
 }
 
 NCursesUi::~NCursesUi() {
@@ -100,11 +103,21 @@ NCursesUi::~NCursesUi() {
     delwin(queueW);
 
     endwin();
+
+    endInputThread = true;
+    inputThread->join();
+    delete inputThread;
+}
+
+Input NCursesUi::getInput() {
+    return inputBuffer.exchange(Input::noInput);
 }
 
 void NCursesUi::render() {
-    mvwaddch(playFieldW, 1, 1, inputBuffer.load());
     wrefresh(playFieldW);
+    wrefresh(savedPieceW);
+    wrefresh(scoreW);
+    wrefresh(queueW);
 }
 
 bool NCursesUi::isAnimating() {
