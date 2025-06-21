@@ -27,4 +27,3 @@ int Tetris::startGame() {
         this_thread::sleep_for(TICK);
     }
 }
-

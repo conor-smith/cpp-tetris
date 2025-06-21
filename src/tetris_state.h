@@ -3,7 +3,7 @@
 #pragma once
 
 enum class Cell {
-    emtpy,
+    empty,
     border,
     cyan,
     blue,
@@ -17,14 +17,12 @@ enum class Cell {
 class Rectangle {
     public:
 
-    Cell getCell(int x, int y);
-
-    friend class TetrisState;
-    
-    private:
-    
     Rectangle(int width, int height);
     Rectangle(int width, int height, std::vector<Cell> contents);
+    
+    Cell getCell(int x, int y);
+    
+    private:
 
     void setCell(int x, int y, Cell newValue);
 
@@ -34,19 +32,79 @@ class Rectangle {
     std::vector<Cell> contents;
 };
 
-class TetrisState {
-    // public:
+class Coordinate {
+    public:
     
-    // TetrisState();
-    // Rectangle* getPlayField();
+    int getX();
+    int getY();
 
-    // bool moveLeft();
-    // bool moveRight();
-    // bool moveDown();
-    // bool moveToBottom();
-    // bool rotateClockwise();
-    // bool rotateAnticlockwise();
+    friend class TetrisState;
+
+    private:
     
-    // std::vector<int> checkClearedRowsIfPlaced();
-    // bool placeAndClearRows(std::vector<int> rowsToClear = {});
+    int x;
+    int y;
+};
+
+class Tetromino {
+    public:
+    Tetromino(const std::vector<Rectangle> rotations);
+
+    const std::vector<Rectangle> rotations;
+};
+
+class ActiveTetromino {
+    public:
+
+    Coordinate getLocation();
+    Coordinate getGhostLocation();
+    const Rectangle* getTetromino();
+
+    friend class TetrisState;
+    
+    private:
+    
+    Coordinate location;
+    Coordinate ghostLocation;
+
+    const Tetromino* tetromino;
+    int rotation;
+};
+
+class TetrisState {
+    public:
+    
+    TetrisState();
+    Rectangle* getPlayField();
+    ActiveTetromino* getActiveTetromino();
+    std::vector<const Tetromino*>* getQueue();
+    const Tetromino* getSavedPiece();
+
+    int getScore();
+    int getLevel();
+
+    bool moveLeft();
+    bool moveRight();
+    bool moveDown();
+    bool moveToBottom();
+    bool rotateClockwise();
+    bool rotateAnticlockwise();
+
+    bool saveActiveTetromino();
+    
+    std::vector<int>* beginPlaceAndCheckRowsToClear();
+    bool placeAndClearRows();
+
+    private:
+    
+    Rectangle playField;
+    ActiveTetromino activeTetromino;
+    std::vector<const Tetromino*> queue;
+    const Tetromino* savedPiece;
+
+    int score;
+    int level;
+
+    bool isAwaitingClearRows;
+    std::vector<int> rowsToClear;
 };
