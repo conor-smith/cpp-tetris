@@ -146,7 +146,12 @@ contents(contents) {}
 
 Cell Rectangle::getCell(int x, int y) {
     // TODO - Ensure doesn't go out of bounds
-    return contents.at(y * width + height);
+    return contents.at(y * width + x);
+}
+
+void Rectangle::setCell(int x, int y, Cell cell) {
+    // TODO - Ensure doesn't go out of bounds
+    contents.at(y * width + x) = cell;
 }
 
 // Tetromino implementation
@@ -171,9 +176,22 @@ savedPiece(NULL),
 score(0),
 level(1),
 isAwaitingClearRows(false) {
-    queue.reserve(3);
-
-    // TODO Initialize game state
+    playField.setCell(0, 0, Cell::blue);
+    playField.setCell(1, 0, Cell::blue);
+    playField.setCell(2, 0, Cell::red);
+    playField.setCell(3, 0, Cell::red);
+    playField.setCell(4, 0, Cell::red);
+    playField.setCell(5, 0, Cell::yellow);
+    playField.setCell(6, 0, Cell::purple);
+    playField.setCell(7, 0, Cell::purple);
+    playField.setCell(8, 0, Cell::orange);
+    playField.setCell(9, 0, Cell::green);
+    playField.setCell(0, 1, Cell::empty);
+    playField.setCell(1, 1, Cell::empty);
+    playField.setCell(2, 1, Cell::red);
+    playField.setCell(3, 1, Cell::cyan);
+    playField.setCell(4, 1, Cell::cyan);
+    playField.setCell(5, 1, Cell::blue);
 }
 
 Rectangle& TetrisState::getPlayField() {

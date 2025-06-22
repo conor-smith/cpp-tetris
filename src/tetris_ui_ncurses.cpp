@@ -28,7 +28,7 @@ const std::map<char, Input> inputMap = {
 class NCursesUi : public TetrisUi {
     public:
 
-    NCursesUi(TetrisState* gameState);
+    NCursesUi(TetrisState& gameState);
     ~NCursesUi();
     
     friend void readFromTerminal(NCursesUi* ui);
@@ -56,7 +56,7 @@ class NCursesUi : public TetrisUi {
     void renderRectangle(WINDOW* window, int x, int y, Rectangle* rectangle);
 };
 
-TetrisUi* createTetrisUi(TetrisState* gameState) {
+TetrisUi* createTetrisUi(TetrisState& gameState) {
     return new NCursesUi(gameState);
 }
 
@@ -70,7 +70,7 @@ void readFromTerminal(NCursesUi* ui) {
     }
 }
 
-NCursesUi::NCursesUi(TetrisState* gameState) : TetrisUi(gameState) {
+NCursesUi::NCursesUi(TetrisState& gameState) : TetrisUi(gameState) {
     initscr();
 
     start_color();
@@ -85,6 +85,8 @@ NCursesUi::NCursesUi(TetrisState* gameState) : TetrisUi(gameState) {
     init_pair(Cell::green, COLOR_GREEN, COLOR_BLACK);
     init_pair(Cell::purple, 9, COLOR_BLACK);
     init_pair(Cell::red, COLOR_RED, COLOR_BLACK);
+
+    attron(COLOR_PAIR(Cell::empty));
 
     cbreak();
     noecho();
@@ -102,12 +104,15 @@ NCursesUi::NCursesUi(TetrisState* gameState) : TetrisUi(gameState) {
     queueW = newwin(17, 12, 1, 40);
     wborder(queueW, '|', '|', '-', '-', '+', '+', '+', '+');
 
+    renderRectangle(playFieldW, 1, 1, &gameState.getPlayField());
     wrefresh(savedPieceW);
     wrefresh(scoreW);
     wrefresh(playFieldW);
     wrefresh(queueW);
 
     inputThread = new std::thread(readFromTerminal, this);
+
+    attroff(COLOR_PAIR(Cell::empty));
 }
 
 NCursesUi::~NCursesUi() {
@@ -144,16 +149,24 @@ void NCursesUi::renderRectangle(WINDOW* window, int x, int y, Rectangle* rectang
     Cell currentAttr = Cell::empty;
 
     for(int ry = 0;ry < rectangle->height;ry++) {
-        wmove(window, x, getmaxy(window) - 1 - ry);
+        wmove(window, getmaxy(window) - 2 - ry, x);
         
         for(int rx = 0;rx < rectangle->width;rx++) {
             Cell currentCell = rectangle->getCell(rx, ry);
 
             if(currentCell != currentAttr) {
+                wattroff(window, COLOR_PAIR(currentAttr));
                 wattron(window, COLOR_PAIR(currentCell));
+                currentAttr = currentCell;
             }
 
-            
+            if(currentCell == Cell::empty) {
+                waddstr(window, "  ");
+            } else {
+                waddstr(window, "[]");
+            }
         }
     }
+
+    wattroff(window, COLOR_PAIR(currentAttr));
 }

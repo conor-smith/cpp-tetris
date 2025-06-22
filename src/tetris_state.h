@@ -3,7 +3,7 @@
 #pragma once
 
 enum Cell {
-    border = 0,
+    rectBorder = 0,
     empty = 1,
     cyan = 2,
     blue = 3,

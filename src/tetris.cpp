@@ -13,7 +13,9 @@ using namespace chrono_literals;
 // Frame rate of approx 60s
 const auto TICK = 16.67ms;
 
-Tetris::Tetris() : gameState(TetrisState()), ui(createTetrisUi(&gameState)) {}
+Tetris::Tetris() :
+gameState(TetrisState()),
+ui(createTetrisUi(gameState)) {}
 
 Tetris::~Tetris() {
     delete ui;

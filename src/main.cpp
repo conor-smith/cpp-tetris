@@ -1,7 +1,18 @@
+#include <iostream>
+#include <csignal>
+
 #include "tetris.h"
 
-int main() {
-    Tetris tetris = Tetris();
+Tetris* tetris = NULL;
 
-    return tetris.startGame();
+void handler(int) {
+    delete tetris;
+}
+
+int main() {
+    signal(SIGINT, handler);
+
+    tetris = new Tetris();
+
+    return tetris->startGame();
 }
