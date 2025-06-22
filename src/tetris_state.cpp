@@ -176,22 +176,11 @@ savedPiece(NULL),
 score(0),
 level(1),
 isAwaitingClearRows(false) {
-    playField.setCell(0, 0, Cell::blue);
-    playField.setCell(1, 0, Cell::blue);
-    playField.setCell(2, 0, Cell::red);
-    playField.setCell(3, 0, Cell::red);
-    playField.setCell(4, 0, Cell::red);
-    playField.setCell(5, 0, Cell::yellow);
-    playField.setCell(6, 0, Cell::purple);
-    playField.setCell(7, 0, Cell::purple);
-    playField.setCell(8, 0, Cell::orange);
-    playField.setCell(9, 0, Cell::green);
-    playField.setCell(0, 1, Cell::empty);
-    playField.setCell(1, 1, Cell::empty);
-    playField.setCell(2, 1, Cell::red);
-    playField.setCell(3, 1, Cell::cyan);
-    playField.setCell(4, 1, Cell::cyan);
-    playField.setCell(5, 1, Cell::blue);
+    for(int row = 0;row < 8;row++) {
+        for(int column = 0;column < 10;column++) {
+            playField.setCell(column, row, static_cast<Cell>(row + 1));
+        }
+    }
 }
 
 Rectangle& TetrisState::getPlayField() {

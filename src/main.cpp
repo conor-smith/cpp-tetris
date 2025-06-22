@@ -3,16 +3,8 @@
 
 #include "tetris.h"
 
-Tetris* tetris = NULL;
-
-void handler(int) {
-    delete tetris;
-}
-
 int main() {
-    signal(SIGINT, handler);
+    Tetris tetris;
 
-    tetris = new Tetris();
-
-    return tetris->startGame();
+    return tetris.startGame();
 }

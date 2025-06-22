@@ -23,9 +23,48 @@ Tetris::~Tetris() {
 
 int Tetris::startGame() {
     // Game loop
-    while(true) {
+    bool gameIsRunning = true;
+
+    while(gameIsRunning) {
+        
+        switch (ui->getInput()) {
+            case Input::left:
+            gameState.moveLeft();
+            break;
+
+            case Input::right:
+            gameState.moveRight();
+            break;
+
+            case Input::down:
+            gameState.moveDown();
+            break;
+            
+            case Input::clockwise:
+            gameState.rotateClockwise();
+            break;
+
+            case Input::anticlockwise:
+            gameState.rotateAnticlockwise();
+            break;
+
+            case Input::place:
+            //TODO
+            break;
+
+            case Input::save:
+            gameState.saveActiveTetromino();
+            break;
+
+            case Input::pause:
+            gameIsRunning = false;
+            break;
+        }
+
         ui->render();
 
         this_thread::sleep_for(TICK);
     }
+
+    return 0;
 }

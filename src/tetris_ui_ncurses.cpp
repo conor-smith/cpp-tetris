@@ -1,8 +1,6 @@
 #include <ncurses.h>
 #include <iostream>
 #include <string>
-#include <thread>
-#include <atomic>
 #include <map>
 #include <array>
 
@@ -13,11 +11,11 @@ const std::map<char, Input> inputMap = {
     {'a', Input::left},
     {'s', Input::down},
     {'d', Input::right},
-    {'q', Input::anticlockwise},
+    {'w', Input::anticlockwise},
     {'e', Input::clockwise},
     {' ', Input::place},
-    {'w', Input::save},
-    {27, Input::pause} // Escape key
+    {'f', Input::save},
+    {'q', Input::pause}
 };
 
 /*
@@ -30,8 +28,6 @@ class NCursesUi : public TetrisUi {
 
     NCursesUi(TetrisState& gameState);
     ~NCursesUi();
-    
-    friend void readFromTerminal(NCursesUi* ui);
 
     Input getInput() override;
 
@@ -46,12 +42,7 @@ class NCursesUi : public TetrisUi {
     WINDOW* queueW;
     
     bool animating = false;
-    
-    std::atomic_bool acceptInput;
-    std::atomic<Input> inputBuffer;
-    
-    std::thread* inputThread;
-    std::atomic_bool endInputThread = false;
+    bool acceptingInput = true;
 
     void renderRectangle(WINDOW* window, int x, int y, Rectangle* rectangle);
 };
@@ -60,22 +51,12 @@ TetrisUi* createTetrisUi(TetrisState& gameState) {
     return new NCursesUi(gameState);
 }
 
-void readFromTerminal(NCursesUi* ui) {
-    while(!ui->endInputThread) {
-        char input = halfdelay(10);
-
-        if(ui->acceptInput && inputMap.contains(input)) {
-            ui->inputBuffer.store(inputMap.at(input));
-        }
-    }
-}
-
 NCursesUi::NCursesUi(TetrisState& gameState) : TetrisUi(gameState) {
     initscr();
 
     start_color();
-    init_color(8, 255, 165, 0); // Orange
-    init_color(9, 148, 0, 211); // Purple
+    init_color(8, 255, 127, 0); // Orange
+    init_color(9, 255, 0, 255); // Purple
 
     init_pair(Cell::empty, COLOR_WHITE, COLOR_BLACK);
     init_pair(Cell::cyan, COLOR_CYAN, COLOR_BLACK);
@@ -85,11 +66,6 @@ NCursesUi::NCursesUi(TetrisState& gameState) : TetrisUi(gameState) {
     init_pair(Cell::green, COLOR_GREEN, COLOR_BLACK);
     init_pair(Cell::purple, 9, COLOR_BLACK);
     init_pair(Cell::red, COLOR_RED, COLOR_BLACK);
-
-    attron(COLOR_PAIR(Cell::empty));
-
-    cbreak();
-    noecho();
 
     // Create windows
     savedPieceW = newwin(7, 12, 1, 2);
@@ -110,9 +86,7 @@ NCursesUi::NCursesUi(TetrisState& gameState) : TetrisUi(gameState) {
     wrefresh(playFieldW);
     wrefresh(queueW);
 
-    inputThread = new std::thread(readFromTerminal, this);
-
-    attroff(COLOR_PAIR(Cell::empty));
+    noecho();
 }
 
 NCursesUi::~NCursesUi() {
@@ -123,14 +97,16 @@ NCursesUi::~NCursesUi() {
     delwin(queueW);
 
     endwin();
-
-    endInputThread = true;
-    inputThread->join();
-    delete inputThread;
 }
 
 Input NCursesUi::getInput() {
-    return inputBuffer.exchange(Input::noInput);
+    move(0, 0);
+    char input = wgetch(playFieldW);
+    if(acceptingInput && inputMap.contains(input)) {
+        return inputMap.at(input);
+    } else {
+        return Input::noInput;
+    }
 }
 
 void NCursesUi::render() {
@@ -167,6 +143,4 @@ void NCursesUi::renderRectangle(WINDOW* window, int x, int y, Rectangle* rectang
             }
         }
     }
-
-    wattroff(window, COLOR_PAIR(currentAttr));
 }
