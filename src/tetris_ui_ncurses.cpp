@@ -40,7 +40,6 @@ class NCursesUi : public TetrisUi {
 
     private:
 
-    
     WINDOW* playFieldW;
     WINDOW* savedPieceW;
     WINDOW* scoreW;
@@ -51,8 +50,10 @@ class NCursesUi : public TetrisUi {
     std::atomic_bool acceptInput;
     std::atomic<Input> inputBuffer;
     
-    std::thread* inputThread;    
+    std::thread* inputThread;
     std::atomic_bool endInputThread = false;
+
+    void renderRectangle(WINDOW* window, int x, int y, Rectangle* rectangle);
 };
 
 TetrisUi* createTetrisUi(TetrisState* gameState) {
@@ -71,6 +72,20 @@ void readFromTerminal(NCursesUi* ui) {
 
 NCursesUi::NCursesUi(TetrisState* gameState) : TetrisUi(gameState) {
     initscr();
+
+    start_color();
+    init_color(8, 255, 165, 0); // Orange
+    init_color(9, 148, 0, 211); // Purple
+
+    init_pair(Cell::empty, COLOR_WHITE, COLOR_BLACK);
+    init_pair(Cell::cyan, COLOR_CYAN, COLOR_BLACK);
+    init_pair(Cell::blue, COLOR_BLUE, COLOR_BLACK);
+    init_pair(Cell::orange, 8, COLOR_BLACK);
+    init_pair(Cell::yellow, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(Cell::green, COLOR_GREEN, COLOR_BLACK);
+    init_pair(Cell::purple, 9, COLOR_BLACK);
+    init_pair(Cell::red, COLOR_RED, COLOR_BLACK);
+
     cbreak();
     noecho();
 
@@ -122,4 +137,23 @@ void NCursesUi::render() {
 
 bool NCursesUi::isAnimating() {
     return false;
+}
+
+void NCursesUi::renderRectangle(WINDOW* window, int x, int y, Rectangle* rectangle) {
+    wattron(window, COLOR_PAIR(Cell::empty));
+    Cell currentAttr = Cell::empty;
+
+    for(int ry = 0;ry < rectangle->height;ry++) {
+        wmove(window, x, getmaxy(window) - 1 - ry);
+        
+        for(int rx = 0;rx < rectangle->width;rx++) {
+            Cell currentCell = rectangle->getCell(rx, ry);
+
+            if(currentCell != currentAttr) {
+                wattron(window, COLOR_PAIR(currentCell));
+            }
+
+            
+        }
+    }
 }

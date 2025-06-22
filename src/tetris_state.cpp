@@ -160,7 +160,7 @@ Coordinate ActiveTetromino::getGhostLocation() {
     return ghostLocation;
 }
 
-const Rectangle* ActiveTetromino::getTetromino() {
+const Rectangle* ActiveTetromino::getTetrominoRotation() {
     return &tetromino->rotations.at(rotation);
 }
 
@@ -176,16 +176,16 @@ isAwaitingClearRows(false) {
     // TODO Initialize game state
 }
 
-Rectangle* TetrisState::getPlayField() {
-    return &playField;
+Rectangle& TetrisState::getPlayField() {
+    return playField;
 }
 
-ActiveTetromino* TetrisState::getActiveTetromino() {
-    return &activeTetromino;
+ActiveTetromino& TetrisState::getActiveTetromino() {
+    return activeTetromino;
 }
 
-vector<const Tetromino*>* TetrisState::getQueue() {
-    return &queue;
+vector<const Tetromino*>& TetrisState::getQueue() {
+    return queue;
 }
 
 const Tetromino* TetrisState::getSavedPiece() {
@@ -235,9 +235,9 @@ bool TetrisState::saveActiveTetromino() {
     return true;
 }
 
-vector<int>* TetrisState::beginPlaceAndCheckRowsToClear() {
+vector<int>& TetrisState::beginPlaceAndCheckRowsToClear() {
     // TODO
-    return &rowsToClear;
+    return rowsToClear;
 }
 
 bool TetrisState::placeAndClearRows() {

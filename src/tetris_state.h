@@ -2,16 +2,16 @@
 
 #pragma once
 
-enum class Cell {
-    empty,
-    border,
-    cyan,
-    blue,
-    orange,
-    yellow,
-    green,
-    purple,
-    red
+enum Cell {
+    border = 0,
+    empty = 1,
+    cyan = 2,
+    blue = 3,
+    orange = 4,
+    yellow = 5,
+    green = 6,
+    purple = 7,
+    red = 8
 };
 
 class Rectangle {
@@ -19,15 +19,17 @@ class Rectangle {
 
     Rectangle(int width, int height);
     Rectangle(int width, int height, std::vector<Cell> contents);
+
+    friend class TetrisState;
     
     Cell getCell(int x, int y);
+    
+    const int width;
+    const int height;
     
     private:
 
     void setCell(int x, int y, Cell newValue);
-
-    const int width;
-    const int height;
 
     std::vector<Cell> contents;
 };
@@ -58,7 +60,7 @@ class ActiveTetromino {
 
     Coordinate getLocation();
     Coordinate getGhostLocation();
-    const Rectangle* getTetromino();
+    const Rectangle* getTetrominoRotation();
 
     friend class TetrisState;
     
@@ -75,9 +77,9 @@ class TetrisState {
     public:
     
     TetrisState();
-    Rectangle* getPlayField();
-    ActiveTetromino* getActiveTetromino();
-    std::vector<const Tetromino*>* getQueue();
+    Rectangle& getPlayField();
+    ActiveTetromino& getActiveTetromino();
+    std::vector<const Tetromino*>& getQueue();
     const Tetromino* getSavedPiece();
 
     int getScore();
@@ -92,7 +94,7 @@ class TetrisState {
 
     bool saveActiveTetromino();
     
-    std::vector<int>* beginPlaceAndCheckRowsToClear();
+    std::vector<int>& beginPlaceAndCheckRowsToClear();
     bool placeAndClearRows();
 
     private:
