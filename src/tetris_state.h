@@ -22,7 +22,7 @@ class Rectangle {
 
     friend class TetrisState;
     
-    Cell getCell(int x, int y);
+    Cell getCell(int x, int y) const;
     
     const int width;
     const int height;
@@ -109,4 +109,8 @@ class TetrisState {
 
     bool isAwaitingClearRows;
     std::vector<int> rowsToClear;
+
+    const Tetromino* getRandomTetromino();
+    void resetActiveTetromino(const Tetromino* nextTetromino);
+    void calculateGhostTetromino();
 };

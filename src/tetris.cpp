@@ -29,36 +29,36 @@ int Tetris::startGame() {
         
         switch (ui->getInput()) {
             case Input::left:
-            gameState.moveLeft();
-            break;
+                gameState.moveLeft();
+                break;
 
             case Input::right:
-            gameState.moveRight();
-            break;
+                gameState.moveRight();
+                break;
 
             case Input::down:
-            gameState.moveDown();
-            break;
+                gameState.moveDown();
+                break;
             
             case Input::clockwise:
-            gameState.rotateClockwise();
-            break;
+                gameState.rotateClockwise();
+                break;
 
             case Input::anticlockwise:
-            gameState.rotateAnticlockwise();
-            break;
+                gameState.rotateAnticlockwise();
+                break;
 
             case Input::place:
-            //TODO
-            break;
+                //TODO
+                break;
 
             case Input::save:
-            gameState.saveActiveTetromino();
-            break;
+                gameState.saveActiveTetromino();
+                break;
 
             case Input::pause:
-            gameIsRunning = false;
-            break;
+                gameIsRunning = false;
+                break;
         }
 
         ui->render();
