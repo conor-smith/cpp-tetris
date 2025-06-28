@@ -17,7 +17,8 @@ playField(Rectangle(10, 22)),
 savedPiece(NULL),
 score(0),
 level(1),
-isAwaitingClearRows(false) {
+isAwaitingClearRows(false),
+gameOver(false) {
 
     // Set random seed
     srand(time(0));
@@ -72,7 +73,7 @@ bool TetrisState::moveRight() {
 
 bool TetrisState::moveDown() {
     ActiveTetromino newAt = activeTetromino;
-    newAt.location.y--;
+    newAt.location.y++;
 
     return updateActiveTetromino(newAt);
 }

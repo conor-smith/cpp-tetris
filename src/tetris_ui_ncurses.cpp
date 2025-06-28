@@ -241,11 +241,11 @@ void NCursesUi::renderActiveTetromino() {
                 
                 if(currentAttr == Cell::empty) {
                     currentAttr = tet->getCell(tetX, tetY);
-                    attron(COLOR_PAIR(currentAttr));
+                    wattron(playFieldW, COLOR_PAIR(currentAttr));
                 }
 
                 int winY = -1 + tetLocation.getY() + tetY;
-                int winX = tetLocation.getX() + tetX * 2;
+                int winX = (tetLocation.getX() + tetX) * 2 + 1;
 
                 if(winY < 1) {
                     break;
@@ -299,7 +299,6 @@ void NCursesUi::renderRectangle(WINDOW* window, int x, int y, const Rectangle* r
             Cell currentCell = rectangle->getCell(rx, ry);
 
             if(currentCell != currentAttr) {
-                wattroff(window, COLOR_PAIR(currentAttr));
                 wattron(window, COLOR_PAIR(currentCell));
                 currentAttr = currentCell;
             }
