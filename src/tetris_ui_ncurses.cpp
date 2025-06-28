@@ -57,10 +57,9 @@ class NCursesUi : public TetrisUi {
     void refreshScoreW();
     void refreshQueueW();
     
-    void renderActiveTetromino();
-
     void renderCenteredTetromino(WINDOW* window, int x, int y, const Rectangle* rectangle);
     void renderRectangle(WINDOW* window, int x, int y, const Rectangle* rectangle);
+    void renderClearRectangle(WINDOW* window, int x, int y, const Rectangle* rectangle, Cell color);
 };
 
 TetrisUi* createTetrisUi(TetrisState& gameState) {
@@ -184,7 +183,26 @@ bool NCursesUi::isAnimating() {
 void NCursesUi::refreshPlayFieldW() {
     renderRectangle(playFieldW, 1, -1, &gameState.getPlayField());
 
-    renderActiveTetromino();
+    ActiveTetromino& activeTet = gameState.getActiveTetromino();
+    const Rectangle* currentRotation = activeTet.getTetrominoRotation();
+
+    int activeTetGhostY = activeTet.getGhostLocation().getY() - 1;
+    int activeTetGhostX = activeTet.getGhostLocation().getX() * 2 + 1;
+
+    int activeTetY = activeTet.getLocation().getY() - 1;
+    int activeTetX = activeTet.getLocation().getX() * 2 + 1;
+
+    Cell tetColour = Cell::empty;
+    for(int i = 0;i < currentRotation->width && tetColour == Cell::empty;i++) {
+        for(int j = 0;j < currentRotation->height && tetColour == Cell::empty;j++) {
+            if(currentRotation->getCell(i, j) != Cell::empty) {
+                tetColour = currentRotation->getCell(i, j);
+            }
+        }
+    }
+
+    renderClearRectangle(playFieldW, activeTetGhostX, activeTetGhostY, currentRotation, Cell::empty);
+    renderClearRectangle(playFieldW, activeTetX, activeTetY, currentRotation, tetColour);
 
     wrefresh(playFieldW);
 }
@@ -227,33 +245,6 @@ void NCursesUi::refreshQueueW() {
         }
 
         wrefresh(queueW);
-    }
-}
-
-void NCursesUi::renderActiveTetromino() {
-    Cell currentAttr = Cell::empty;
-    Coordinate tetLocation = gameState.getActiveTetromino().getLocation();
-    const Rectangle* tet = gameState.getActiveTetromino().getTetrominoRotation();
-
-    for(int tetY = 0;tetY < tet->height;tetY++) {
-        for(int tetX = 0;tetX < tet->width;tetX++) {
-            if(tet->getCell(tetX, tetY) != Cell::empty) {
-                
-                if(currentAttr == Cell::empty) {
-                    currentAttr = tet->getCell(tetX, tetY);
-                    wattron(playFieldW, COLOR_PAIR(currentAttr));
-                }
-
-                int winY = -1 + tetLocation.getY() + tetY;
-                int winX = (tetLocation.getX() + tetX) * 2 + 1;
-
-                if(winY < 1) {
-                    break;
-                }
-
-                mvwaddstr(playFieldW, winY, winX, "[]");
-            }
-        }
     }
 }
 
@@ -307,6 +298,29 @@ void NCursesUi::renderRectangle(WINDOW* window, int x, int y, const Rectangle* r
                 waddstr(window, "  ");
             } else {
                 waddstr(window, "[]");
+            }
+        }
+    }
+}
+
+void NCursesUi::renderClearRectangle(WINDOW* window, int x, int y, const Rectangle* rectangle, Cell color) {
+    wattron(window, COLOR_PAIR(color));
+
+    for(int ry = 0;ry < rectangle->height;ry++) {
+
+        // This lets us account for the two cut off rows in the playfield
+        int ncursesY = y + ry;
+        if(ncursesY <= 0) {
+            continue;
+        }
+        
+        for(int rx = 0;rx < rectangle->width;rx++) {
+            Cell currentCell = rectangle->getCell(rx, ry);
+            
+            int ncursesX = x + rx * 2;
+
+            if(currentCell != Cell::empty) {
+                mvwaddstr(window, ncursesY, ncursesX, "[]");
             }
         }
     }
