@@ -1,4 +1,6 @@
 #include <vector>
+#include <exception>
+#include <string>
 
 #pragma once
 
@@ -84,18 +86,23 @@ class TetrisState {
 
     int getScore();
     int getLevel();
+    bool getGameOver();
 
     bool moveLeft();
     bool moveRight();
     bool moveDown();
-    bool moveToBottom();
     bool rotateClockwise();
     bool rotateAnticlockwise();
 
     bool saveActiveTetromino();
     
-    std::vector<int>& beginPlaceAndCheckRowsToClear();
-    bool placeAndClearRows();
+    // There must be a step between placing the tetromino and clearing the rows
+    // This is to give the renderer time to play an animation
+    // Once the first method is called, no moves may be made until the rows are cleared
+    // In the step between placing and clearing, the ActiveTetromino tetromino will be added to the playfield
+    // The activeTetromino object itself will return NULL when asked for the current tetromino
+    std::vector<int>& placeActiveTetrominoAndGetRowsToClear();
+    bool clearRowsAndContinue();
 
     private:
     
@@ -106,11 +113,27 @@ class TetrisState {
 
     int score;
     int level;
+    bool gameOver;
 
     bool isAwaitingClearRows;
     std::vector<int> rowsToClear;
 
     const Tetromino* getRandomTetromino();
     void resetActiveTetromino(const Tetromino* nextTetromino);
+    bool updateActiveTetromino(ActiveTetromino newAT);
+    bool updateRotatedActiveTetromino(ActiveTetromino newAt);
     void calculateGhostTetromino();
+};
+
+class TetrisException : public std::exception {
+    public:
+
+    TetrisException(std::string message);
+    virtual ~TetrisException();
+
+    virtual const char* what() const noexcept;
+
+    private:
+
+    const std::string message;
 };

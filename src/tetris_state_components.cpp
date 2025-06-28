@@ -1,8 +1,8 @@
 #include <vector>
+#include <string>
+#include <format>
 
 #include "tetris_state.h"
-
-// Moved definitions of everything not TetrisState to this file to reduce clutter
 
 // Rectangle definition
 Rectangle::Rectangle(int width, int height) : 
@@ -23,17 +23,24 @@ height(height),
 contents(contents) {}
 
 Cell Rectangle::getCell(int x, int y) const {
-    // TODO - Ensure doesn't go out of bounds
-    return contents.at(y * width + x);
+    if(x >= width || x < 0 || y >= height || y < 0) {
+        return Cell::rectBorder;
+    } else {
+        return contents.at(y * width + x);
+    }
 }
 
 void Rectangle::setCell(int x, int y, Cell cell) {
-    // TODO - Ensure doesn't go out of bounds
-    contents.at(y * width + x) = cell;
+    if(x >= width || x < 0 || y >= height || y < 0) {
+        throw TetrisException(
+            std::format("Coordinates {} and {} are out of bounds for rectangle of dimensions {} and {}",
+            x, y, width, height));
+    } else {
+        contents.at(y * width + x) = cell;
+    }
 }
 
 // Coordinate definition
-
 int Coordinate::getX() {
     return x;
 }
@@ -45,6 +52,8 @@ int Coordinate::getY() {
 // Tetromino definition
 Tetromino::Tetromino(const std::vector<Rectangle> rotations) : rotations(rotations) {}
 
+// ActiveTetromino definition
+// Internal state intended to be managed entirely by TetrisState owner
 Coordinate ActiveTetromino::getLocation() {
     return location;
 }
@@ -55,4 +64,13 @@ Coordinate ActiveTetromino::getGhostLocation() {
 
 const Rectangle* ActiveTetromino::getTetrominoRotation() {
     return &tetromino->rotations.at(rotation);
+}
+
+// TetrisException implementation
+
+TetrisException::TetrisException(std::string message) : message(message) {}
+TetrisException::~TetrisException() {}
+
+const char* TetrisException::what() const noexcept {
+    return message.data();
 }
