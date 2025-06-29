@@ -8,15 +8,18 @@
 #include "tetris_ui.h"
 #include "tetris_state.h"
 
+#define BORDER(window) wborder(window, '|', '|', '-', '-', '+', '+', '+', '+')
+
 const std::map<char, Input> inputMap = {
-    {'a', Input::left},
-    {'s', Input::down},
-    {'d', Input::right},
-    {'w', Input::anticlockwise},
-    {'e', Input::clockwise},
+    {KEY_LEFT, Input::left},
+    {KEY_DOWN, Input::down},
+    {KEY_RIGHT, Input::right},
+    {'a', Input::anticlockwise},
+    {'d', Input::clockwise},
     {' ', Input::place},
-    {'f', Input::save},
-    {'q', Input::pause}
+    {'s', Input::save},
+    {'w', Input::pause},
+    {'q', Input::quit}
 };
 
 /*
@@ -32,6 +35,9 @@ class NCursesUi : public TetrisUi {
 
     Input getInput() override;
 
+    void pause() override;
+    void unpause() override;
+
     bool isAnimating() override;
     void render() override;
 
@@ -40,10 +46,12 @@ class NCursesUi : public TetrisUi {
     WINDOW* playFieldW;
     WINDOW* savedPieceW;
     WINDOW* scoreW;
+    WINDOW* levelW;
     WINDOW* queueW;
+    WINDOW* popupW = NULL;
     
     bool animating = false;
-    bool acceptingInput = true;
+    bool paused = false;
 
     // Caching these values allows us to ensure we only render objects that are updated
     // The playfield, however, will always be rendered in full
@@ -52,10 +60,14 @@ class NCursesUi : public TetrisUi {
     const Tetromino* cachedSavedPiece = NULL;
     std::vector<const Tetromino*> cachedQueue;
 
+    void setUpWindows();
     void refreshPlayFieldW();
     void refreshSavedPieceW();
     void refreshScoreW();
+    void refreshLevelW();
     void refreshQueueW();
+    void displayPopup(std::string message, attr_t attribute);
+    void killPopup();
     
     void renderCenteredTetromino(WINDOW* window, int x, int y, const Rectangle* rectangle);
     void renderRectangle(WINDOW* window, int x, int y, const Rectangle* rectangle);
@@ -76,10 +88,11 @@ NCursesUi::NCursesUi(TetrisState& gameState) : TetrisUi(gameState) {
     initscr();
     noecho();
     cbreak();
+    curs_set(0);
 
     start_color();
     init_color(8, 255, 127, 0); // Orange
-    init_color(9, 255, 0, 255); // Purple
+    init_color(9, 63, 0, 255); // Purple
 
     init_pair(Cell::empty, COLOR_WHITE, COLOR_BLACK);
     init_pair(Cell::cyan, COLOR_CYAN, COLOR_BLACK);
@@ -90,6 +103,62 @@ NCursesUi::NCursesUi(TetrisState& gameState) : TetrisUi(gameState) {
     init_pair(Cell::purple, 9, COLOR_BLACK);
     init_pair(Cell::red, COLOR_RED, COLOR_BLACK);
 
+    setUpWindows();
+
+    nodelay(playFieldW, true);
+    keypad(playFieldW, true);
+}
+
+NCursesUi::~NCursesUi() {
+    // Unsure if necessary, but doesn't hurt
+    delwin(savedPieceW);
+    delwin(scoreW);
+    delwin(playFieldW);
+    delwin(queueW);
+
+    endwin();
+}
+
+Input NCursesUi::getInput() {
+    char input = wgetch(playFieldW);
+    if(inputMap.contains(input)) {
+        return inputMap.at(input);
+    } else {
+        return Input::noInput;
+    }
+}
+
+void NCursesUi::pause() {
+    if(!paused) {
+        paused = true;
+        displayPopup("PAUSED", COLOR_PAIR(Cell::green));
+    }
+}
+
+void NCursesUi::unpause() {
+    if(paused) {
+        paused = false;
+        killPopup();
+    }
+}
+
+void NCursesUi::render() {
+    if(popupW != NULL) {
+        wrefresh(popupW);
+    } else {
+        refreshPlayFieldW();
+        refreshSavedPieceW();
+        refreshScoreW();
+        refreshLevelW();
+        refreshQueueW();
+    }
+}
+
+bool NCursesUi::isAnimating() {
+    return false;
+}
+
+void NCursesUi::setUpWindows() {
     /*
      * As terminal "cells" are twice as tall as they are wide, all x values are multiples of 
      * All windows have at least 1 row and 2 columns spacing
@@ -112,72 +181,63 @@ NCursesUi::NCursesUi(TetrisState& gameState) : TetrisUi(gameState) {
     int savedPieceWStartY = 1;
     int savedPieceWWidth = 12;
     int savedPieceWHeight = 8;
+    std::string savedPieceWTitle = "SAVED";
+    int savedPieceWTitleX = savedPieceWWidth / 2 - savedPieceWTitle.length() / 2;
 
     int playFieldWStartX = savedPieceWStartX + savedPieceWWidth + 2;
     int playFieldWStartY = savedPieceWStartY;
     int playFieldWWidth = 22;
     int playFieldWHeight = 22;
+    std::string playFieldWTitle = "TETRIS";
+    int playFieldWTitleX = playFieldWWidth / 2 - playFieldWTitle.length() / 2;
 
     int scoreWStartX = savedPieceWStartX;
     int scoreWStartY = savedPieceWStartY + savedPieceWHeight + 1;
     int scoreWWidth = savedPieceWWidth;
-    int scoreWHeight = playFieldWStartY + playFieldWHeight - 1 - scoreWStartX + 1;
+    int scoreWHeight = 6;
+    std::string scoreWTitle = "SCORE";
+    int scoreWTitleX = scoreWWidth / 2 - scoreWTitle.length() / 2;
+
+    int levelWStartX = scoreWStartX;
+    int levelWStartY = scoreWStartY + scoreWHeight + 1;
+    int levelWWidth = scoreWWidth;
+    int levelWHeight = 6;
+    std::string levelWTitle = "LEVEL";
+    int levelWTitleX = levelWWidth / 2 - levelWTitle.length() / 2;
 
     int queueWStartX = playFieldWStartX + playFieldWWidth + 2;
     int queueWStartY = playFieldWStartY;
-    int queueWidth = savedPieceWWidth;
-    int queueHeight = playFieldWHeight;
+    int queueWWidth = savedPieceWWidth;
+    int queueWHeight = playFieldWHeight;
+    std::string queueWTitle = "QUEUE";
+    int queueWTitleX = queueWWidth / 2 - queueWTitle.length() / 2;
 
     // Create windows
     savedPieceW = newwin(savedPieceWHeight, savedPieceWWidth, savedPieceWStartY, savedPieceWStartX);
-    wborder(savedPieceW, '|', '|', '-', '-', '+', '+', '+', '+');
+    BORDER(savedPieceW);
+    mvwaddstr(savedPieceW, 0, savedPieceWTitleX, savedPieceWTitle.data());
 
     scoreW = newwin(scoreWHeight, scoreWWidth, scoreWStartY, scoreWStartX);
-    wborder(scoreW, '|', '|', '-', '-', '+', '+', '+', '+');
+    BORDER(scoreW);
+    mvwaddstr(scoreW, 0, scoreWTitleX, scoreWTitle.data());
+
+    levelW = newwin(levelWHeight, levelWWidth, levelWStartY, levelWStartX);
+    BORDER(levelW);
+    mvwaddstr(levelW, 0, levelWTitleX, levelWTitle.data());
 
     playFieldW = newwin(playFieldWHeight, playFieldWWidth, playFieldWStartY, playFieldWStartX);
-    wborder(playFieldW, '|', '|', '-', '-', '+', '+', '+', '+');
+    BORDER(playFieldW);
+    mvwaddstr(playFieldW, 0, playFieldWTitleX, playFieldWTitle.data());
 
     queueW = newwin(17, 12, 1, 40);
-    wborder(queueW, '|', '|', '-', '-', '+', '+', '+', '+');
+    BORDER(queueW);
+    mvwaddstr(queueW, 0, queueWTitleX, queueWTitle.data());
 
     wrefresh(savedPieceW);
     wrefresh(scoreW);
     wrefresh(playFieldW);
+    wrefresh(levelW);
     wrefresh(queueW);
-
-    nodelay(playFieldW, true);
-}
-
-NCursesUi::~NCursesUi() {
-    // Unsure if necessary, but doesn't hurt
-    delwin(savedPieceW);
-    delwin(scoreW);
-    delwin(playFieldW);
-    delwin(queueW);
-
-    endwin();
-}
-
-Input NCursesUi::getInput() {
-    move(0, 0);
-    char input = wgetch(playFieldW);
-    if(acceptingInput && inputMap.contains(input)) {
-        return inputMap.at(input);
-    } else {
-        return Input::noInput;
-    }
-}
-
-void NCursesUi::render() {
-    refreshPlayFieldW();
-    refreshSavedPieceW();
-    refreshScoreW();
-    refreshQueueW();
-}
-
-bool NCursesUi::isAnimating() {
-    return false;
 }
 
 void NCursesUi::refreshPlayFieldW() {
@@ -218,14 +278,22 @@ void NCursesUi::refreshSavedPieceW() {
 }
 
 void NCursesUi::refreshScoreW() {
-    if(cachedLevel != gameState.getLevel() || cachedScore != gameState.getScore()) {
-        mvwaddstr(scoreW, 2, 1, "Level: ");
-        waddstr(scoreW, std::to_string(gameState.getLevel()).data());
-        
-        mvwaddstr(scoreW, 4, 1, "Score: ");
-        waddstr(scoreW, std::to_string(gameState.getScore()).data());
+    if(cachedScore != gameState.getScore()) {
+        mvwaddstr(scoreW, 2, 2, std::to_string(gameState.getScore()).data());
 
         wrefresh(scoreW);
+
+        cachedScore = gameState.getScore();
+    }
+}
+
+void NCursesUi::refreshLevelW() {
+    if(cachedLevel != gameState.getLevel()) {
+        mvwaddstr(levelW, 2, 2, std::to_string(gameState.getLevel()).data());
+
+        wrefresh(levelW);
+
+        cachedLevel = gameState.getLevel();
     }
 }
 
@@ -248,6 +316,35 @@ void NCursesUi::refreshQueueW() {
     }
 }
 
+void NCursesUi::displayPopup(std::string message, attr_t attribute) {
+    int popupWWidth = message.length() + 6;
+    int popupWHeight = 5;
+    int popupWStartX = 27 - popupWWidth / 2;
+    int popupWStartY = 11;
+
+    popupW = newwin(popupWHeight, popupWWidth, popupWStartY, popupWStartX);
+
+    wattron(popupW, attribute);
+    wattron(popupW, A_BOLD);
+
+    BORDER(popupW);
+    mvwaddstr(popupW, 2, 3, message.data());
+
+    wattroff(popupW, attribute);
+    wattroff(popupW, A_BOLD);
+}
+
+void NCursesUi::killPopup() {
+    delwin(popupW);
+    popupW = NULL;
+
+    wrefresh(savedPieceW);
+    wrefresh(scoreW);
+    wrefresh(levelW);
+    wrefresh(playFieldW);
+    wrefresh(queueW);
+}
+
 void NCursesUi::renderCenteredTetromino(WINDOW* window, int x, int y, const Rectangle* rectangle) {
     // Used for saved and queued tetrominos
     // First draws an empty border of spaces around the centre to erase any existing shapes
@@ -255,17 +352,15 @@ void NCursesUi::renderCenteredTetromino(WINDOW* window, int x, int y, const Rect
 
     switch (rectangle->width) {
     case 2:
-        mvwaddstr(window, y + 3, x, "        ");
-        mvwaddstr(window, y + 2, x + 6, "  ");
-        mvwaddstr(window, y + 1, x + 6, "  ");
-        offset = 2;
-    
-    case 3:
         mvwaddstr(window, y, x, "        ");
         mvwaddstr(window, y + 1, x, "  ");
         mvwaddstr(window, y + 2, x, "  ");
-
-        offset = offset == 0 ? 1 : offset;
+        offset = 1;
+        
+    case 3:
+        mvwaddstr(window, y + 3, x, "        ");
+        mvwaddstr(window, y + 2, x + 6, "  ");
+        mvwaddstr(window, y + 1, x + 6, "  ");
     
     case 4:
         renderRectangle(window, x + offset * 2, y + offset, rectangle);

@@ -97,6 +97,10 @@ bool TetrisState::rotateAnticlockwise() {
 }
 
 bool TetrisState::saveActiveTetromino() {
+    if(isAwaitingClearRows || gameOver) {
+        throw TetrisException("Moves are not currently allowed");
+    }
+
     if(savedTetrominoThisTurn) {
         return false;
     }
@@ -116,6 +120,7 @@ bool TetrisState::saveActiveTetromino() {
 
 vector<int>& TetrisState::placeActiveTetrominoAndGetRowsToClear() {
     isAwaitingClearRows = true;
+    savedTetrominoThisTurn = false;
 
     const Rectangle* currentRotation = activeTetromino.getTetrominoRotation();
 

@@ -15,4 +15,6 @@ class Tetris {
     
     TetrisState gameState;
     TetrisUi* ui;
+
+    bool paused;
 };

@@ -1,4 +1,6 @@
 #include <vector>
+#include <exception>
+#include <string>
 
 #include "tetris_state.h"
 
@@ -13,7 +15,8 @@ enum class Input {
     anticlockwise,
     place,
     save,
-    pause
+    pause,
+    quit
 };
 
 class TetrisUi {
@@ -28,6 +31,9 @@ class TetrisUi {
         return Input::noInput;
     }
 
+    virtual void pause() {}
+    virtual void unpause() {}
+
     virtual void animateClearingRows(std::vector<int> rowsToClear) {}
     virtual bool isAnimating() {
         return false;
@@ -37,6 +43,21 @@ class TetrisUi {
     
     TetrisUi(TetrisState& gameState) : gameState(gameState) {}
     TetrisState& gameState;
+};
+
+class UiException : public std::exception {
+    public:
+
+    UiException(std::string message) : message(message) {}
+    virtual ~UiException() {}
+
+    virtual const char* what() const noexcept {
+        return message.data();
+    }
+
+    private:
+
+    const std::string message;
 };
 
 TetrisUi* createTetrisUi(TetrisState& gameState);
