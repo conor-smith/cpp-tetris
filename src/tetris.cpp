@@ -49,7 +49,8 @@ int Tetris::startGame() {
                 break;
 
             case Input::place:
-                //TODO
+                gameState.placeActiveTetrominoAndGetRowsToClear();
+                gameState.clearRowsAndContinue();
                 break;
 
             case Input::save:

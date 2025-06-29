@@ -18,7 +18,8 @@ savedPiece(NULL),
 score(0),
 level(1),
 isAwaitingClearRows(false),
-gameOver(false) {
+gameOver(false),
+savedTetrominoThisTurn(false) {
 
     // Set random seed
     srand(time(0));
@@ -30,7 +31,6 @@ gameOver(false) {
     }
 
     resetActiveTetromino(getRandomTetromino());
-    calculateGhostTetromino();
 }
 
 Rectangle& TetrisState::getPlayField() {
@@ -97,35 +97,156 @@ bool TetrisState::rotateAnticlockwise() {
 }
 
 bool TetrisState::saveActiveTetromino() {
-    // TODO
+    if(savedTetrominoThisTurn) {
+        return false;
+    }
+
+    if(savedPiece == NULL) {
+        savedPiece = activeTetromino.tetromino;
+        resetActiveTetromino(popOffQueue());
+    } else {
+        const Tetromino* swap = savedPiece;
+        savedPiece = activeTetromino.tetromino;
+        resetActiveTetromino(swap);
+    }
+
+    savedTetrominoThisTurn = true;
     return true;
 }
 
 vector<int>& TetrisState::placeActiveTetrominoAndGetRowsToClear() {
-    // TODO
+    isAwaitingClearRows = true;
+
+    const Rectangle* currentRotation = activeTetromino.getTetrominoRotation();
+
+    // Iterate through rows of activeTetromino
+    for(int atY = 0;atY < currentRotation->height;atY++) {
+        int pfY = activeTetromino.placementLocation.y + atY;
+
+        // For some tetrominos, the lowest row in the square is below the lowest filled in cell
+        // If such a peice is placed on the bottom layer, the rotation square may reach below
+        // When this happens, we can break out of this loop
+        if(pfY >= playField.height) {
+            break;
+        }
+
+        for(int atX = 0;atX < currentRotation->width;atX++) {
+            int pfX = activeTetromino.placementLocation.x + atX;
+
+            // Place activeTetromino cells into actual playfield
+            Cell tetCell = currentRotation->getCell(atX, atY);
+            if(tetCell != Cell::empty) {
+                playField.setCell(pfX, pfY, tetCell);
+            }
+        }
+
+        // After all the activeTetromino cells have been placed in this row
+        // We can check if the all cells in this row are full
+        // If so, we add this row to the rowsToClear vector
+        bool rowIsFull = true;
+        for(int pfX = 0;pfX < playField.width && rowIsFull;pfX++) {
+            rowIsFull = playField.getCell(pfX, pfY) != Cell::empty;
+        }
+
+        if(rowIsFull) {
+            rowsToClear.push_back(pfY);
+        }
+    }
+
     return rowsToClear;
 }
 
+// Not terribly efficient, but I'm a bit tired
+// TODO: Document properly
 bool TetrisState::clearRowsAndContinue() {
-    // TODO
-    return false;
+    isAwaitingClearRows = false;
+    if(rowsToClear.size() > 0) {
+        int offset = 1;
+
+        int firstRowToClear = rowsToClear.back();
+        rowsToClear.pop_back();
+        
+        int nextRowToClear;
+        if(rowsToClear.empty()) {
+            nextRowToClear = -10;
+        } else {
+            nextRowToClear = rowsToClear.back();
+            rowsToClear.pop_back();
+        }
+
+        for(int pfY = firstRowToClear - 1;pfY + offset >= 0;pfY--) {
+            // If current row is to be cleared, increment offset and move on to next row
+            // Otherwise, move all cells from current row into row + offset
+            if(pfY == nextRowToClear) {
+                if(rowsToClear.empty()) {
+                    nextRowToClear = -10;
+                } else {
+                    nextRowToClear = rowsToClear.back();
+                    rowsToClear.pop_back();
+                }
+
+                offset++;
+            } else {
+                for(int pfX = 0;pfX < playField.width;pfX++) {
+                    Cell currentCell = playField.getCell(pfX, pfY);
+
+                    if(currentCell == Cell::outOfBounds) {
+                        currentCell = Cell::empty;
+                    }
+
+                    playField.setCell(pfX, pfY + offset, currentCell);
+                }
+            }
+        }
+    }
+
+    return resetActiveTetromino(popOffQueue());
 }
 
 const Tetromino* TetrisState::getRandomTetromino() {
     return TETROMINOS[rand() % 7];
 }
 
-void TetrisState::resetActiveTetromino(const Tetromino* nextTetromino) {
-    activeTetromino.tetromino = nextTetromino;
-    activeTetromino.rotation = 0;
-    
-    // TODO: Determine if collision occurs
-    int offset = nextTetromino->rotations[0].width == 2 ? 1 : 0;
+// I would have used a queue rather than a vector, but the C++ queue object can't be arbitrarily accessed
+// So I have to do this manually
+const Tetromino* TetrisState::popOffQueue() {
+    const Tetromino* toReturn = queue.front();
 
-    activeTetromino.location.x = 3 + offset;
-    activeTetromino.location.y = 0 + offset * 2;
+    for(int i = 0;i < queue.size() - 1;i++) {
+        queue.at(i) = queue.at(i + 1);
+    }
+
+    queue.at(queue.size() - 1) = getRandomTetromino();
+
+    return toReturn;
 }
 
+bool TetrisState::resetActiveTetromino(const Tetromino* nextTetromino) {
+    ActiveTetromino newAt = ActiveTetromino();
+
+    newAt.tetromino = nextTetromino;
+    newAt.rotation = 0;
+
+    const Rectangle* currentRotation = newAt.getTetrominoRotation();
+
+    // Place new activeTetromino at the top of the visible field in the centre (y = 2)
+    // If it cannot be placed there, attempt y = 1 and y = 0
+    // If it cannot be placed there, game over
+    newAt.location.x = currentRotation->width <= 3 ? 4 : 3;
+    
+    for(int y = 2;y >= 0;y++) {
+        newAt.location.y = y;
+        if(updateActiveTetromino(newAt)) {
+            return true;
+        }
+    }
+
+    gameOver = true;
+    return false;
+}
+
+// If new activeTetromino object results in no collisions
+// Replace current activeTetromino with new ActiveTetromino and return true
 bool TetrisState::updateActiveTetromino(ActiveTetromino newAt) {
     if(isAwaitingClearRows || gameOver) {
         throw TetrisException("Moves are not currently allowed");
@@ -136,17 +257,21 @@ bool TetrisState::updateActiveTetromino(ActiveTetromino newAt) {
     bool noCollision = true;
     const Rectangle* rotationAt = newAt.getTetrominoRotation();
     Coordinate locationAt = newAt.getLocation();
-    for(int xAt = 0;noCollision && xAt < rotationAt->width;xAt++) {
+    for(int xAt = 0;xAt < rotationAt->width;xAt++) {
         for(int yAt = 0;noCollision && yAt < rotationAt->height;yAt++) {
             noCollision = 
                 rotationAt->getCell(xAt, yAt) == Cell::empty ||
                 playField.getCell(locationAt.x + xAt, locationAt.y + yAt) == Cell::empty;
+
+            if(!noCollision) {
+                break;
+            }
         }
     }
 
     if(noCollision) {
         activeTetromino = newAt;
-        calculateGhostTetromino();
+        calculatePlacementTetromino();
     }
 
     return noCollision;
@@ -163,85 +288,75 @@ bool TetrisState::updateActiveTetromino(ActiveTetromino newAt) {
  * If nothing is present, above the Tetromino, spaces below it will also be checked in the same order
  */
 bool TetrisState::updateRotatedActiveTetromino(ActiveTetromino newAt) {
-    bool noCollision = false;
-
     // Check current location
-    noCollision = updateActiveTetromino(newAt);
-
-    if(noCollision) {
-        return noCollision;
+    if(updateActiveTetromino(newAt)) {
+        return true;
     }
 
     // Check for spaces above
     Coordinate originalLocation = newAt.location;
     int maxOffset = newAt.getTetrominoRotation()->width - 1;
 
-    for(int yOffset = 1;!noCollision && yOffset <= maxOffset;yOffset++) {
+    for(int yOffset = 1;yOffset <= maxOffset;yOffset++) {
         newAt.location.y = originalLocation.y - yOffset;
-        noCollision = updateActiveTetromino(newAt);
-    }
-
-    if(noCollision) {
-        return noCollision;
+        if(updateActiveTetromino(newAt)) {
+            return true;
+        }
     }
 
     // Alternate checking above in columns to the side
-    for(int xOffset = 1;!noCollision && xOffset <= maxOffset;xOffset++) {
-        for(int yOffset = 0;!noCollision && yOffset <= maxOffset;yOffset++) {
+    for(int xOffset = 1;xOffset <= maxOffset;xOffset++) {
+        for(int yOffset = 0;yOffset <= maxOffset;yOffset++) {
             newAt.location.y = originalLocation.y - yOffset;
 
             // Check to the left
             newAt.location.x = originalLocation.x - xOffset;
-            noCollision = updateActiveTetromino(newAt);
-
-            if(noCollision) {
-                break;
+            if(updateActiveTetromino(newAt)) {
+                return true;
             }
 
             // Check to the right
             newAt.location.x = originalLocation.x + xOffset;
-            noCollision = updateActiveTetromino(newAt);
+            if(updateActiveTetromino(newAt)) {
+                return true;
+            }
         }
     }
 
-    if(noCollision) {
-        return noCollision;
-    }
-
     // Check for spaces below
-    for(int yOffset = 1;!noCollision && yOffset <= maxOffset;yOffset++) {
+    for(int yOffset = 1;yOffset <= maxOffset;yOffset++) {
         newAt.location.y = originalLocation.y + yOffset;
-        noCollision = updateActiveTetromino(newAt);
-    }
-
-    if(noCollision) {
-        return noCollision;
+        if(updateActiveTetromino(newAt)) {
+            return true;
+        }
     }
 
     // Alternate checking below in columns to the side
-    for(int xOffset = 1;!noCollision && xOffset <= maxOffset;xOffset++) {
-        for(int yOffset = 1;!noCollision && yOffset <= maxOffset;yOffset++) {
+    for(int xOffset = 1;xOffset <= maxOffset;xOffset++) {
+        for(int yOffset = 1;yOffset <= maxOffset;yOffset++) {
             newAt.location.y = originalLocation.y + yOffset;
 
             // Check to the left
             newAt.location.x = originalLocation.x - xOffset;
-            noCollision = updateActiveTetromino(newAt);
-
-            if(noCollision) {
-                break;
+            if(updateActiveTetromino(newAt)) {
+                return true;
             }
 
             // Check to the right
             newAt.location.x = originalLocation.x + xOffset;
-            noCollision = updateActiveTetromino(newAt);
+            if(updateActiveTetromino(newAt)) {
+                return true;
+            }
         }
     }
 
-    return noCollision;
+    // Will only reach here if no alternate placement could be found
+    return false;
 }
 
-// The ghost tetromino is displayed directly under the activeTetromino at the y value it would go to, should it be placed
-void TetrisState::calculateGhostTetromino() {
+// The placement tetromino is displayed directly under the activeTetromino at the y value it would go to, should it be placed
+// It can be used by both the UI for display and the gameState for logic
+void TetrisState::calculatePlacementTetromino() {
     const Rectangle* currentRotation = activeTetromino.getTetrominoRotation();
     
     // Stores the maximum distance the activeTetromino can move upwards (in y values, downwards in game)
@@ -283,6 +398,6 @@ void TetrisState::calculateGhostTetromino() {
         }
     }
 
-    activeTetromino.ghostLocation.x = activeTetromino.location.x;
-    activeTetromino.ghostLocation.y = activeTetromino.location.y + maxOffset;
+    activeTetromino.placementLocation.x = activeTetromino.location.x;
+    activeTetromino.placementLocation.y = activeTetromino.location.y + maxOffset;
 }

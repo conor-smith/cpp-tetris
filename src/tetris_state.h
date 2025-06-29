@@ -5,7 +5,7 @@
 #pragma once
 
 enum Cell {
-    rectBorder = 0,
+    outOfBounds = 0,
     empty = 1,
     cyan = 2,
     blue = 3,
@@ -61,7 +61,7 @@ class ActiveTetromino {
     public:
 
     Coordinate getLocation();
-    Coordinate getGhostLocation();
+    Coordinate getPlacementLocation();
     const Rectangle* getTetrominoRotation();
 
     friend class TetrisState;
@@ -69,7 +69,7 @@ class ActiveTetromino {
     private:
     
     Coordinate location;
-    Coordinate ghostLocation;
+    Coordinate placementLocation;
 
     const Tetromino* tetromino;
     int rotation;
@@ -102,6 +102,8 @@ class TetrisState {
     // In the step between placing and clearing, the ActiveTetromino tetromino will be added to the playfield
     // The activeTetromino object itself will return NULL when asked for the current tetromino
     std::vector<int>& placeActiveTetrominoAndGetRowsToClear();
+
+    // Returns false if game over
     bool clearRowsAndContinue();
 
     private:
@@ -113,16 +115,18 @@ class TetrisState {
 
     int score;
     int level;
+    
     bool gameOver;
-
+    bool savedTetrominoThisTurn;
     bool isAwaitingClearRows;
     std::vector<int> rowsToClear;
 
     const Tetromino* getRandomTetromino();
-    void resetActiveTetromino(const Tetromino* nextTetromino);
+    const Tetromino* popOffQueue();
+    bool resetActiveTetromino(const Tetromino* nextTetromino);
     bool updateActiveTetromino(ActiveTetromino newAT);
     bool updateRotatedActiveTetromino(ActiveTetromino newAt);
-    void calculateGhostTetromino();
+    void calculatePlacementTetromino();
 };
 
 class TetrisException : public std::exception {

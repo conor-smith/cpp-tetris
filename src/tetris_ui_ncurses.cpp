@@ -186,8 +186,8 @@ void NCursesUi::refreshPlayFieldW() {
     ActiveTetromino& activeTet = gameState.getActiveTetromino();
     const Rectangle* currentRotation = activeTet.getTetrominoRotation();
 
-    int activeTetGhostY = activeTet.getGhostLocation().getY() - 1;
-    int activeTetGhostX = activeTet.getGhostLocation().getX() * 2 + 1;
+    int activeTetPlacementY = activeTet.getPlacementLocation().getY() - 1;
+    int activeTetPlacementX = activeTet.getPlacementLocation().getX() * 2 + 1;
 
     int activeTetY = activeTet.getLocation().getY() - 1;
     int activeTetX = activeTet.getLocation().getX() * 2 + 1;
@@ -201,7 +201,7 @@ void NCursesUi::refreshPlayFieldW() {
         }
     }
 
-    renderClearRectangle(playFieldW, activeTetGhostX, activeTetGhostY, currentRotation, Cell::empty);
+    renderClearRectangle(playFieldW, activeTetPlacementX, activeTetPlacementY, currentRotation, Cell::empty);
     renderClearRectangle(playFieldW, activeTetX, activeTetY, currentRotation, tetColour);
 
     wrefresh(playFieldW);

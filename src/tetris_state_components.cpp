@@ -24,7 +24,7 @@ contents(contents) {}
 
 Cell Rectangle::getCell(int x, int y) const {
     if(x >= width || x < 0 || y >= height || y < 0) {
-        return Cell::rectBorder;
+        return Cell::outOfBounds;
     } else {
         return contents.at(y * width + x);
     }
@@ -58,8 +58,8 @@ Coordinate ActiveTetromino::getLocation() {
     return location;
 }
 
-Coordinate ActiveTetromino::getGhostLocation() {
-    return ghostLocation;
+Coordinate ActiveTetromino::getPlacementLocation() {
+    return placementLocation;
 }
 
 const Rectangle* ActiveTetromino::getTetrominoRotation() {
