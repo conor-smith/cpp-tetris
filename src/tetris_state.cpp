@@ -164,6 +164,9 @@ vector<int>& TetrisState::placeActiveTetrominoAndGetRowsToClear() {
 // Not terribly efficient, but I'm a bit tired
 // TODO: Document properly
 bool TetrisState::clearRowsAndContinue() {
+    // Score = number of rows to clear ^ 2
+    score += rowsToClear.size() * rowsToClear.size();
+
     isAwaitingClearRows = false;
     if(rowsToClear.size() > 0) {
         int offset = 1;
